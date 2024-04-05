@@ -1,0 +1,6 @@
+__pycache__/
+amine
+bin/
+lib/
+lib64
+pyvenv.cfg
