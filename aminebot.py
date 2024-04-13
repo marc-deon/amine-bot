@@ -1,11 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-# Version 2024-04-05
+# Version 2024-04-09
 # Warning: there IS some strangely written cruft in this file that remains as I didn't know better
 # when I wrote those chunks ~4 years ago for another project.
 
 # API Reference: https://myanimelist.net/apiconfig/references/api/v2#section/Authentication
 
+import sys
 import requests
 import json
 import os
@@ -14,6 +15,7 @@ from datetime import timedelta, timezone
 import mal
 from SerializableDatetime import SerializableDatetime, now
 from math import ceil
+import urllib.parse
 
 JAPAN = timezone(timedelta(hours=9))
 
@@ -38,8 +40,7 @@ def increment_previous_datetime(show) -> None:
 def check_for_updates() -> list:
     ids = []
     for id, show in shows.items():
-        if show["previous_date"] + timedelta(weeks=1) < now(JAPAN):
-            increment_previous_datetime(id)
+        if show["previous_date"] + timedelta(days=6.99) < now(JAPAN):
             ids.append(id)
     return ids
 
@@ -63,6 +64,10 @@ def ReadConfig():
             shows[show]["previous_date"] = SerializableDatetime.fromisoformat(shows[show]["previous_date"])
         else:
             shows[show]["previous_date"] = SerializableDatetime(1970, 1, 1, tzinfo=JAPAN)
+
+        if "skipped" not in shows[show]:
+            shows[show]["skipped"] = 0
+
     return config
 
 def SaveConfig():
@@ -185,15 +190,18 @@ if __name__ == "__main__":
         # convert start date + broadcast time to datetime
         start_date = SerializableDatetime.fromisoformat(info["start_date"])
         hh, mm = info["broadcast"]["start_time"].split(":")
-        start_date.replace(hour=int(hh), minute=int(mm))
-        start_date = start_date.replace(tzinfo=JAPAN)
+        start_date = start_date.replace(hour=int(hh), minute=int(mm), tzinfo=JAPAN)
 
         # Get current time
         current_date = now(JAPAN)
 
         # Find latest episode number
-        fractional = (current_date - start_date).days / 7
-        episode_num = ceil((current_date - start_date).days / 7)
+        diff = current_date - start_date
+        SECONDS_IN_WEEK = 3600 * 24 * 7 - 120 # Tweak this by just a couple minutes
+        floating = diff.total_seconds() / SECONDS_IN_WEEK
+        episode_num = ceil(floating) - show["skipped"]
+
+        print(name, floating, episode_num, start_date, current_date, "\n", sep="\n")
 
         # Skip unaired shows
         if episode_num < 1:
@@ -208,12 +216,16 @@ if __name__ == "__main__":
 
         else:
             # Create message for new episode
+            print("New ep!")
             m.message = f"""{name} episode #{episode_num} is out!"""
+            m.link += "\n<https://nyaa.si/?f=0&c=0_0&q=" + urllib.parse.quote(info["title"]) + ">"
             increment_previous_datetime(id)
 
         messages.append(m)
 
-    if updated:
+    if "--test" in sys.argv:
+        exit()
+    elif updated:
         # Save back to file
         SaveShows()
     else:

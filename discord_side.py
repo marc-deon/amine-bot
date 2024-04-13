@@ -7,7 +7,7 @@ client = discord.Client(intents=intents)
 
 weekly_anime_id = 1221920619487039618
 starlight_test_channel_id = 1043384233261006888
-default_channel_id = starlight_test_channel_id
+default_channel_id = weekly_anime_id
 
 _messages = []
 
