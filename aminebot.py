@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-# Version 2024-05-06
 # Warning: there IS some strangely written cruft in this file that remains as I didn't know better
 # when I wrote those chunks ~4 years ago for another project.
 
