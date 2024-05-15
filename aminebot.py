@@ -16,6 +16,7 @@ import mal
 from SerializableDatetime import SerializableDatetime, now
 from math import ceil
 import urllib.parse
+from Message import Message
 
 JAPAN = timezone(timedelta(hours=9))
 
@@ -24,13 +25,6 @@ ARCHIVE_NAME = "anime-list.json"
 CONFIG_ROOT = os.path.expanduser("~/.config/aminebot")
 config = {}
 shows = {}
-
-
-class Message:
-    def __init__(self, message="", embed="", link=""):
-        self.message = message
-        self.embed = embed
-        self.link = link
 
 
 def increment_previous_datetime(show) -> None:
@@ -49,23 +43,35 @@ def check_for_updates() -> list:
 def ReadConfig():
     global config
     global shows
+    config_path = os.path.join(CONFIG_ROOT, "config.json")
+    shows_path = os.path.join(CONFIG_ROOT, "shows.json")
     try:
-        config = json.load(open(os.path.join(CONFIG_ROOT, "config.json")))
+        config = json.load(open(config_path))
     except:
         config = {}
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        with open(config_path, 'w') as f:
+            f.write("{\n\n}")
+
     try:
-        shows = json.load(open(os.path.join(CONFIG_ROOT, "shows.json")))
+        shows = json.load(open(shows_path))
     except:
         shows = {}
+        os.makedirs(os.path.dirname(shows_path), exist_ok=True)
+        with open(shows_path, 'w') as f:
+            f.write("{\n\n}")
 
     if "MAL_CLIENT_ID" not in config:
         exit("Must have MAL_CLIENT_ID in config!")
     if "MAL_CLIENT_SECRET" not in config:
         exit("Must have MAL_CLIENT_SECRET in config!")
+
     try:
         token = json.load(open(os.path.join(CONFIG_ROOT, TOKEN_NAME)))
     except:
-        # ADD HERE
+        with open(os.path.join(CONFIG_ROOT, TOKEN_NAME)) as f:
+            f.write("{\n\n}")
+            exit("Must have DISCORD_TOKEN in token.json!")
         pass
 
     for show in shows:
@@ -234,6 +240,13 @@ if __name__ == "__main__":
     token = retrieve_token()
     config["token"] = token
 
+    if "--test-bot" in sys.argv:
+        import discord_side
+        token = config["DISCORD_TOKEN"]
+        discord_side.test(token)
+        exit()
+
+
     if "--show_cal" in sys.argv:
         ShowCalendar()
         exit()
@@ -317,6 +330,7 @@ if __name__ == "__main__":
 
     if "--test" in sys.argv:
         exit()
+
 
     import discord_side
     token = config["DISCORD_TOKEN"]
