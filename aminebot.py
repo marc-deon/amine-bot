@@ -42,8 +42,13 @@ def check_for_updates() -> list:
 def ReadConfig():
     global config
     global shows
+
+    global token
+    
     config_path = os.path.join(CONFIG_ROOT, "config.json")
     shows_path = os.path.join(CONFIG_ROOT, "shows.json")
+    token_path = os.path.join(CONFIG_ROOT, "token.json")
+    # Load Config file
     try:
         config = json.load(open(config_path))
     except:
@@ -52,6 +57,23 @@ def ReadConfig():
         with open(config_path, 'w') as f:
             f.write("{\n\n}")
 
+    # Load Token file
+    try:
+        with open(token_path, 'r') as file:
+            # return token
+            token = json.loads(file.read())
+    except:
+        code_challenge = get_new_code_verifier()
+        print_new_authorisation_url(code_challenge)
+        authorisation_code = input("Copy-paste the authorisation code: ").strip()
+        token = generate_new_token(authorisation_code, code_challenge)
+        token['aquired'] = now()
+        save_token()
+        #return retrieve_token()
+
+    config["token"] = token
+
+    # Load Shows file
     try:
         shows = json.load(open(shows_path))
     except:
@@ -140,7 +162,7 @@ def generate_new_token(authorisation_code: str, code_verifier: str) -> dict:
 
 def refresh_token(refresh_token:str) -> dict:
     global token
-    print("refresh token")
+    print("refresh token:", refresh_token)
     url = "https://myanimelist.net/v1/oauth2/token"
 
     data = {
@@ -167,20 +189,8 @@ def refresh_token(refresh_token:str) -> dict:
     return token
 
 
-def retrieve_token():
-    global token
-    try:
-        with open('/'.join([CONFIG_ROOT, TOKEN_NAME]), 'r') as file:
-            return json.loads(file.read())
-    except:
-        code_challenge = get_new_code_verifier()
-        print_new_authorisation_url(code_challenge)
-        authorisation_code = input("Copy-paste the authorisation code: ").strip()
-        token = generate_new_token(authorisation_code, code_challenge)
-        token['aquired'] = now()
-        save_token()
-        return retrieve_token()
-
+#def retrieve_token():
+    
 def save_token():
     temp = token["aquired"]
     token["aquired"] = repr(temp)
@@ -234,10 +244,18 @@ def ShowCalendar():
             print(color, days[dow], " ", sep="", end="")
         print()
 
+
+def CheckMalToken():
+    
+    pass
+
+
 if __name__ == "__main__":
+
+
     ReadConfig()
-    token = retrieve_token()
-    config["token"] = token
+    #token = retrieve_token()
+    #config["token"] = token
 
     if "--test-bot" in sys.argv:
         import discord_side
