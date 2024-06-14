@@ -166,8 +166,8 @@ def refresh_token(refresh_token:str) -> dict:
     url = "https://myanimelist.net/v1/oauth2/token"
 
     data = {
-            "MAL_client_id": config["MAL_CLIENT_ID"],
-            "MAL_client_secret": config["MAL_CLIENT_SECRET"],
+            "client_id": config["MAL_CLIENT_ID"],
+            "client_secret": config["MAL_CLIENT_SECRET"],
             "grant_type": "refresh_token",
             "refresh_token": refresh_token
     }
