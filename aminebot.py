@@ -245,11 +245,6 @@ def ShowCalendar():
         print()
 
 
-def CheckMalToken():
-    
-    pass
-
-
 if __name__ == "__main__":
 
 
@@ -287,6 +282,7 @@ if __name__ == "__main__":
         save_token()
 
     messages = []
+    ended = []
     for id, show in shows.items():
 
         # Get the previous date and nickname
@@ -297,7 +293,13 @@ if __name__ == "__main__":
             show["title"] = info["title"]
 
             # convert start date + broadcast time to datetime
-            start_date = SerializableDatetime.fromisoformat(info["start_date"])
+            try:
+                start_date = SerializableDatetime.fromisoformat(info["start_date"])
+            except:
+                name = show['title']
+                date = info['start_date'] if 'start_date' in info else None
+                print(f"skipping {name} due to malformed date {date}")
+                continue
             hh, mm = info["broadcast"]["start_time"].split(":")
             start_date = start_date.replace(hour=int(hh), minute=int(mm), tzinfo=JAPAN)
             show["start_date"] = start_date
@@ -323,10 +325,12 @@ if __name__ == "__main__":
         # embed=info['main_picture']['medium']
         m = Message(link=f"https://myanimelist.net/anime/{id}")
 
-        if info["num_episodes"] > 0 and episode_num > info["num_episodes"]:
+        if info["num_episodes"] > 0 and episode_num >= info["num_episodes"]:
             # Create a message for ended shows
             m.message = f"{name} has ended after {info['num_episodes']} episodes."
+            print(m.message)
             messages.append(m)
+            ended.append(id)
 
         elif episode_num > show["previous_episode"]:
             # Create message for new episode
@@ -337,6 +341,8 @@ if __name__ == "__main__":
             show["previous_episode"] = episode_num
             messages.append(m)
 
+    for id in ended:    
+        shows.pop(id)
 
     if messages:
         # Save back to file
@@ -347,7 +353,6 @@ if __name__ == "__main__":
 
     if "--test" in sys.argv:
         exit()
-
 
     import discord_side
     token = config["DISCORD_TOKEN"]
